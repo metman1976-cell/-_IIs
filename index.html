@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- D3.js for Charts -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <!-- Google Font Cairo -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     <script>
@@ -15,10 +17,10 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: '#0284c7',
-                        secondary: '#0369a1',
-                        accent: '#059669',
-                        darkBg: '#0f172a'
+                        primary: '#0f766e',      // Deep Teal (أخضر زمردي عميق)
+                        secondary: '#115e59',    // Darker Teal
+                        accent: '#d97706',       // Warm Amber Gold (ذهبي عنبري)
+                        darkBg: '#042f2e'        // Dark Emerald Slate
                     },
                     fontFamily: {
                         cairo: ['Cairo', 'sans-serif']
@@ -32,7 +34,18 @@
             font-family: 'Cairo', sans-serif;
         }
         .hero-pattern {
-            background: linear-gradient(135deg, rgba(2, 132, 199, 0.9), rgba(5, 150, 105, 0.85)), url('https://placehold.co/1920x1080/0284c7/ffffff?text=Irrigation+Modernization') center/cover;
+            background: linear-gradient(135deg, rgba(15, 118, 110, 0.92), rgba(4, 47, 46, 0.88)), url('https://placehold.co/1920x1080/0f766e/ffffff?text=Irrigation+Modernization') center/cover;
+        }
+        .page-section {
+            display: none;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        .page-section.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
@@ -41,7 +54,7 @@
     <!-- Navbar -->
     <header class="bg-white shadow-md sticky top-0 z-50">
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center space-x-3 space-x-reverse">
+            <div onclick="showPage('home')" class="flex items-center space-x-3 space-x-reverse cursor-pointer">
                 <div class="bg-primary text-white p-2.5 rounded-xl shadow-lg flex items-center justify-center">
                     <i class="fa-solid fa-water text-2xl"></i>
                 </div>
@@ -52,346 +65,599 @@
             </div>
             
             <!-- Desktop Nav -->
-            <nav class="hidden md:flex items-center space-x-8 space-x-reverse font-semibold text-sm">
-                <a href="#home" class="text-primary hover:text-secondary transition">الرئيسية</a>
-                <a href="#about" class="text-slate-600 hover:text-primary transition">عن القطاع</a>
-                <a href="#projects" class="text-slate-600 hover:text-primary transition">المشاريع القومية</a>
-                <a href="#services" class="text-slate-600 hover:text-primary transition">خدمات المزارعين</a>
-                <a href="#calculator" class="text-slate-600 hover:text-primary transition">حاسبة الري</a>
-                <a href="#contact" class="text-slate-600 hover:text-primary transition">اتصل بنا</a>
+            <nav class="hidden lg:flex items-center space-x-6 space-x-reverse font-semibold text-sm">
+                <button onclick="showPage('home')" id="nav-home" class="nav-link text-primary font-bold hover:text-secondary transition py-1 border-b-2 border-primary">الرئيسية</button>
+                <button onclick="showPage('history')" id="nav-history" class="nav-link text-slate-600 hover:text-primary transition py-1 border-b-2 border-transparent">تاريخ القطاع</button>
+                <button onclick="showPage('projects')" id="nav-projects" class="nav-link text-slate-600 hover:text-primary transition py-1 border-b-2 border-transparent">المشروعات (14)</button>
+                <button onclick="showPage('services')" id="nav-services" class="nav-link text-slate-600 hover:text-primary transition py-1 border-b-2 border-transparent">خدمات المزارعين</button>
+                <button onclick="showPage('calculator')" id="nav-calculator" class="nav-link text-slate-600 hover:text-primary transition py-1 border-b-2 border-transparent">حاسبة الري</button>
+                <button onclick="showPage('contact')" id="nav-contact" class="nav-link text-slate-600 hover:text-primary transition py-1 border-b-2 border-transparent">اتصل بنا</button>
             </nav>
 
             <div class="hidden md:flex items-center space-x-3 space-x-reverse">
-                <button onclick="openModal('إشعار طوارئ', 'خط الساخن لخدمة شكاوى المزارعين وقطاع الري: 16552')" class="bg-accent hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow transition flex items-center gap-2">
-                    <i class="fa-solid fa-headset"></i> الخط الساخن
+                <button onclick="openModal('الخط الساخن والطوارئ', 'الخط الساخن الموحد لشكاوى المزارعين وقطاع تطوير الري: 16552 (متاح على مدار 24 ساعة) - واتساب الشكاوى: 01000016552')" class="bg-accent hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow transition flex items-center gap-2">
+                    <i class="fa-solid fa-headset"></i> الخط الساخن 16552
                 </button>
             </div>
 
             <!-- Mobile Menu Button -->
-            <button id="menuBtn" class="md:hidden text-slate-700 text-2xl focus:outline-none">
+            <button id="menuBtn" class="lg:hidden text-slate-700 text-2xl focus:outline-none p-2">
                 <i class="fa-solid fa-bars"></i>
             </button>
         </div>
 
         <!-- Mobile Nav Menu -->
-        <div id="mobileMenu" class="hidden md:hidden bg-white border-t border-slate-100 px-4 pt-2 pb-4 space-y-2">
-            <a href="#home" class="block py-2 text-primary font-semibold">الرئيسية</a>
-            <a href="#about" class="block py-2 text-slate-600">عن القطاع</a>
-            <a href="#projects" class="block py-2 text-slate-600">المشاريع القومية</a>
-            <a href="#services" class="block py-2 text-slate-600">خدمات المزارعين</a>
-            <a href="#calculator" class="block py-2 text-slate-600">حاسبة الري</a>
-            <a href="#contact" class="block py-2 text-slate-600">اتصل بنا</a>
+        <div id="mobileMenu" class="hidden lg:hidden bg-white border-t border-slate-100 px-4 pt-2 pb-4 space-y-2">
+            <button onclick="showPage('home')" class="block w-full text-right py-2 text-primary font-bold">الرئيسية</button>
+            <button onclick="showPage('history')" class="block w-full text-right py-2 text-slate-600">تاريخ القطاع</button>
+            <button onclick="showPage('projects')" class="block w-full text-right py-2 text-slate-600">المشروعات القومية (14)</button>
+            <button onclick="showPage('services')" class="block w-full text-right py-2 text-slate-600">خدمات المزارعين</button>
+            <button onclick="showPage('calculator')" class="block w-full text-right py-2 text-slate-600">حاسبة الري</button>
+            <button onclick="showPage('contact')" class="block w-full text-right py-2 text-slate-600">اتصل بنا</button>
         </div>
     </header>
 
-    <!-- Hero Section -->
-    <section id="home" class="hero-pattern text-white py-24 px-4 relative overflow-hidden">
-        <div class="container mx-auto max-w-5xl text-center relative z-10">
-            <span class="bg-white/20 text-white text-xs font-bold uppercase px-3 py-1.5 rounded-full inline-block mb-4 backdrop-blur-sm">
-                وزارة الموارد المائية والري
-            </span>
-            <h2 class="text-4xl md:text-6xl font-black mb-6 leading-tight">
-                نحو إدارة ذكية ومستدامة للموارد المائية
-            </h2>
-            <p class="text-lg md:text-xl text-slate-100 max-w-3xl mx-auto mb-10 font-light leading-relaxed">
-                يعمل قطاع تطوير الري على تحديث منظومة الري في مصر من خلال تأهيل الترع، التحول للري الحديث، وتفعيل دور روابط مستخدمي المياه لتحقيق أقصى كفاءة استغلال للمياه.
-            </p>
-            <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
-                <a href="#projects" class="w-full sm:w-auto bg-white text-primary font-bold px-8 py-3.5 rounded-xl shadow-xl hover:bg-slate-100 transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-diagram-project"></i> استكشف المشاريع
-                </a>
-                <a href="#calculator" class="w-full sm:w-auto bg-emerald-600 text-white font-bold px-8 py-3.5 rounded-xl shadow-xl hover:bg-emerald-700 transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-calculator"></i> حاسبة توفير المياه
-                </a>
-            </div>
-        </div>
-    </section>
+    <!-- Main Content Container -->
+    <main class="flex-1">
 
-    <!-- Quick Stats Bar -->
-    <section class="bg-white border-b border-slate-200 py-6">
-        <div class="container mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            <div class="p-4 border-l border-slate-100 last:border-none">
-                <div class="text-3xl font-black text-primary mb-1">+7,000 كم</div>
-                <div class="text-sm text-slate-500 font-semibold">تأهيل وتبييض الترع</div>
-            </div>
-            <div class="p-4 border-l border-slate-100 last:border-none">
-                <div class="text-3xl font-black text-emerald-600 mb-1">+4 مليون</div>
-                <div class="text-sm text-slate-500 font-semibold">مزارع مستفيد</div>
-            </div>
-            <div class="p-4 border-l border-slate-100 last:border-none">
-                <div class="text-3xl font-black text-amber-600 mb-1">الري الحديث</div>
-                <div class="text-sm text-slate-500 font-semibold">بديل الغمر التقليدي</div>
-            </div>
-            <div class="p-4">
-                <div class="text-3xl font-black text-cyan-600 mb-1">+6,500</div>
-                <div class="text-sm text-slate-500 font-semibold">رابطة مستخدمي مياه</div>
-            </div>
-        </div>
-    </section>
-
-    <!-- About Section -->
-    <section id="about" class="py-20 px-4">
-        <div class="container mx-auto max-w-6xl">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-                <div>
-                    <span class="text-primary font-bold text-sm bg-primary/10 px-3 py-1 rounded-full uppercase">عن قطاع تطوير الري</span>
-                    <h3 class="text-3xl font-extrabold text-slate-900 mt-3 mb-6">رؤية وطنية لإدارة المياه بكفاءة عالية</h3>
-                    <p class="text-slate-600 leading-relaxed mb-6">
-                        يُعد قطاع تطوير الري أحد أهم القطاعات الاستراتيجية بوزارة الموارد المائية والري، حيث يسعى جاهداً لتطوير شبكات الترع والمساقي الخصوصية، وتحويل نظام الري من الري بالغمر إلى نظم الري الحديثة (التنقيط والرش)، مما يسهم في توفير كميات هائلة من المياه ورفع الإنتاجية الزراعية للمزارع المصري.
+        <!-- PAGE 1: HOME -->
+        <div id="page-home" class="page-section active">
+            <!-- Hero Section -->
+            <section class="hero-pattern text-white py-24 px-4 relative overflow-hidden">
+                <div class="container mx-auto max-w-5xl text-center relative z-10">
+                    <span class="bg-white/20 text-white text-xs font-bold uppercase px-3 py-1.5 rounded-full inline-block mb-4 backdrop-blur-sm">
+                        وزارة الموارد المائية والري
+                    </span>
+                    <h2 class="text-4xl md:text-6xl font-black mb-6 leading-tight">
+                        نحو إدارة ذكية ومستدامة للموارد المائية
+                    </h2>
+                    <p class="text-lg md:text-xl text-slate-100 max-w-3xl mx-auto mb-10 font-light leading-relaxed">
+                        يعمل قطاع تطوير الري على تحديث منظومة الري في مصر من خلال تأهيل الترع، التحول للري الحديث، وتفعيل دور روابط مستخدمي المياه لتحقيق أقصى كفاءة استغلال للمياه.
                     </p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="flex items-start space-x-3 space-x-reverse bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                            <div class="text-primary text-xl mt-1"><i class="fa-solid fa-bullseye"></i></div>
-                            <div>
-                                <h4 class="font-bold text-slate-800">الهدف الرئيسي</h4>
-                                <p class="text-xs text-slate-500 mt-1">تعظيم العائد من وحدة المياه والحد من الهدر.</p>
+                    <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
+                        <button onclick="showPage('projects')" class="w-full sm:w-auto bg-white text-primary font-bold px-8 py-3.5 rounded-xl shadow-xl hover:bg-teal-50 transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-diagram-project"></i> استكشف الـ 14 مشروعاً
+                        </button>
+                        <button onclick="showPage('history')" class="w-full sm:w-auto bg-accent text-white font-bold px-8 py-3.5 rounded-xl shadow-xl hover:bg-amber-700 transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-landmark"></i> تاريخ ونشأة القطاع
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Quick Stats Bar -->
+            <section class="bg-white border-b border-slate-200 py-8">
+                <div class="container mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                    <div class="p-4 border-l border-slate-100 last:border-none">
+                        <div class="text-3xl font-black text-primary mb-1">14 مشروع</div>
+                        <div class="text-sm text-slate-500 font-semibold">مشروعات قومية وتنموية</div>
+                    </div>
+                    <div class="p-4 border-l border-slate-100 last:border-none">
+                        <div class="text-3xl font-black text-accent mb-1">+40 عاماً</div>
+                        <div class="text-sm text-slate-500 font-semibold">من الخبرة والتطوير</div>
+                    </div>
+                    <div class="p-4 border-l border-slate-100 last:border-none">
+                        <div class="text-3xl font-black text-teal-600 mb-1">+7,000 كم</div>
+                        <div class="text-sm text-slate-500 font-semibold">تأهيل وتبطين الترع</div>
+                    </div>
+                    <div class="p-4">
+                        <div class="text-3xl font-black text-amber-600 mb-1">+6,500</div>
+                        <div class="text-sm text-slate-500 font-semibold">رابطة مستخدمي مياه</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Interactive Charts & Analytics Section -->
+            <section class="py-16 px-4 bg-teal-50/40 border-b border-slate-200">
+                <div class="container mx-auto max-w-6xl">
+                    <div class="text-center max-w-3xl mx-auto mb-12">
+                        <span class="text-primary font-bold text-sm bg-primary/10 px-4 py-1.5 rounded-full uppercase">مؤشرات الأداء والإنجازات</span>
+                        <h3 class="text-3xl font-extrabold text-slate-900 mt-3 mb-3">الرسومات البيانية لمعدلات التطوير وتوفير المياه</h3>
+                        <p class="text-slate-600 text-sm">إحصائيات بصرية توضح تطور أطوال الترع المؤهلة ونسب كفاءة استخدام المياه بعد تطبيق نظم الري الحديث.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- Chart 1: Bar Chart (D3.js) -->
+                        <div class="bg-white p-6 rounded-3xl shadow-md border border-slate-200">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <h4 class="font-bold text-lg text-slate-900">تطور أطوال الترع المؤهلة (كم)</h4>
+                                    <p class="text-xs text-slate-500">معدل الإنجاز التراكمي خلال السنوات الأخيرة</p>
+                                </div>
+                                <span class="bg-primary/10 text-primary text-xs font-bold px-3 py-1 rounded-full">إنجاز سنوي</span>
+                            </div>
+                            <div id="barChartContainer" class="w-full h-64 flex items-center justify-center"></div>
+                        </div>
+
+                        <!-- Chart 2: Donut Chart & Comparison (D3.js) -->
+                        <div class="bg-white p-6 rounded-3xl shadow-md border border-slate-200">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <h4 class="font-bold text-lg text-slate-900">توزيع الـ 14 مشروعاً حسب المجال</h4>
+                                    <p class="text-xs text-slate-500">نسب المشروعات القومية، الري الحديث، والتطوير المتكامل</p>
+                                </div>
+                                <span class="bg-accent/10 text-accent text-xs font-bold px-3 py-1 rounded-full">14 مشروع</span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 items-center gap-4">
+                                <div id="donutChartContainer" class="w-full h-60 flex items-center justify-center"></div>
+                                <div class="space-y-3 text-sm">
+                                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-3 h-3 rounded-full bg-[#0f766e]"></span>
+                                            <span class="font-semibold text-slate-700">مشروعات قومية كبرى</span>
+                                        </div>
+                                        <span class="font-bold text-primary">4 مشروعات</span>
+                                    </div>
+                                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-3 h-3 rounded-full bg-[#d97706]"></span>
+                                            <span class="font-semibold text-slate-700">الري الحديث والطاقة</span>
+                                        </div>
+                                        <span class="font-bold text-accent">5 مشروعات</span>
+                                    </div>
+                                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-3 h-3 rounded-full bg-[#0d9488]"></span>
+                                            <span class="font-semibold text-slate-700">التطوير المتكامل</span>
+                                        </div>
+                                        <span class="font-bold text-teal-600">5 مشروعات</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="flex items-start space-x-3 space-x-reverse bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                            <div class="text-emerald-600 text-xl mt-1"><i class="fa-solid fa-handshake"></i></div>
+                    </div>
+
+                    <!-- Water Efficiency Progress Bars -->
+                    <div class="mt-8 bg-white p-6 rounded-3xl shadow-md border border-slate-200">
+                        <h4 class="font-bold text-lg text-slate-900 mb-4">مقارنة كفاءة نقل وتوزيع المياه قبل وبعد التطوير</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div>
-                                <h4 class="font-bold text-slate-800">المشاركة المجتمعية</h4>
-                                <p class="text-xs text-slate-500 mt-1">تفعيل دور روابط مستخدمي المياه في الإدارة والصيانة.</p>
+                                <div class="flex justify-between text-xs font-bold mb-1.5">
+                                    <span class="text-slate-600">الري بالغمر التقليدي (قبل التطوير)</span>
+                                    <span class="text-red-600">52% كفاءة</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                                    <div class="bg-red-500 h-full rounded-full" style="width: 52%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs font-bold mb-1.5">
+                                    <span class="text-slate-600">بعد تأهيل الترع والمساقي</span>
+                                    <span class="text-primary">78% كفاءة</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                                    <div class="bg-primary h-full rounded-full" style="width: 78%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs font-bold mb-1.5">
+                                    <span class="text-slate-600">التحول الكامل للري الحديث</span>
+                                    <span class="text-accent">92% كفاءة</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                                    <div class="bg-accent h-full rounded-full" style="width: 92%"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="relative">
-                    <img src="https://placehold.co/600x400/e0f2fe/0369a1?text=IIS+Projects" alt="قطاع تطوير الري" class="rounded-2xl shadow-xl w-full object-h-80 border-4 border-white">
-                    <div class="absolute -bottom-6 -right-6 bg-slate-900 text-white p-6 rounded-2xl shadow-2xl hidden sm:block max-w-xs">
-                        <div class="text-emerald-400 font-bold text-lg mb-1"><i class="fa-solid fa-circle-check"></i> استدامة مائية</div>
-                        <p class="text-xs text-slate-300">تأمين الاحتياجات المائية الحالية والمستقبلية للأجيال القادمة.</p>
-                    </div>
-                </div>
-            </div>
+            </section>
         </div>
-    </section>
 
-    <!-- Projects Section -->
-    <section id="projects" class="py-20 px-4 bg-slate-100">
-        <div class="container mx-auto max-w-6xl">
-            <div class="text-center max-w-2xl mx-auto mb-16">
-                <span class="text-primary font-bold text-sm bg-primary/10 px-3 py-1 rounded-full uppercase">المشاريع القومية الكبرى</span>
-                <h3 class="text-3xl font-extrabold text-slate-900 mt-3 mb-4">أبرز مبادرات وجهود قطاع تطوير الري</h3>
-                <p class="text-slate-600">تعرف على المشاريع والمبادرات التي غيرت وجه الزراعة والري في القرى المصرية.</p>
-            </div>
+        <!-- PAGE 2: HISTORY OF THE SECTOR -->
+        <div id="page-history" class="page-section py-16 px-4">
+            <div class="container mx-auto max-w-5xl">
+                <div class="text-center max-w-3xl mx-auto mb-16">
+                    <span class="text-primary font-bold text-sm bg-primary/10 px-4 py-1.5 rounded-full uppercase">مسيرة العطاء والتطوير</span>
+                    <h2 class="text-3xl md:text-4xl font-black text-slate-900 mt-4 mb-4">تاريخ ونشأة قطاع تطوير الري (IIS)</h2>
+                    <p class="text-slate-600 leading-relaxed">
+                        رحلة ممتدة لأكثر من أربعة عقود من الابتكار الهندسي والإدارة المائية المتكاملة لتحديث أقدم منظومة ري في العالم.
+                    </p>
+                </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <!-- Project 1 -->
-                <div class="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition border border-slate-200 flex flex-col">
-                    <div class="h-48 bg-primary relative overflow-hidden flex items-center justify-center text-white">
-                        <i class="fa-solid fa-water text-6xl opacity-30 absolute"></i>
-                        <h4 class="text-xl font-bold relative z-10 px-4 text-center">المشروع القومي لتأهيل الترع</h4>
-                    </div>
-                    <div class="p-6 flex-1 flex flex-col justify-between">
+                <!-- Intro Card -->
+                <div class="bg-white rounded-3xl p-8 shadow-md border border-slate-200 mb-12">
+                    <div class="flex flex-col md:flex-row gap-8 items-center">
+                        <div class="w-20 h-20 bg-primary/10 text-primary rounded-2xl flex items-center justify-center text-4xl shrink-0">
+                            <i class="fa-solid fa-landmark"></i>
+                        </div>
                         <div>
-                            <p class="text-sm text-slate-600 leading-relaxed mb-4">
-                                يهدف المشروع إلى ضبط القطاعات المائية للترع، وتوصيل المياه لنهايات الحزوز دون فاقد، وتقليل عمليات تطهير الحشائش، وإضفاء شكل حضاري جمالي بجميع القرى.
+                            <h3 class="text-xl font-bold text-slate-900 mb-2">نبذة تاريخية عن التأسيس</h3>
+                            <p class="text-slate-600 text-sm leading-relaxed">
+                                بدأت فكرة تطوير الري في مصر في أواخر السبعينيات وأوائل الثمانينيات نتيجة الحاجة الملحة لرفع كفاءة استخدام مياه النيل بعد بناء السد العالي، ومواجهة الزيادة السكانية والتوسع الزراعي. ومع نجاح التجارب البحثية الأولى، صدر القرار الوزاري بإنشاء "قطاع تطوير الري" ككيان مستقل ومتخصص داخل وزارة الموارد المائية والري ليتولى مسؤولية التخطيط والتنفيذ والإشراف على مشروعات تطوير الري في كافة محافظات الجمهورية.
                             </p>
                         </div>
-                        <button onclick="openModal('تأهيل الترع والمجاري المائية', 'يتم العمل على تأهيل آلاف الكيلومترات من الترع المتعبة في مختلف المحافظات لضمان وصول المياه للمزارعين بالكمية والتوقيت المناسبين.')" class="w-full bg-slate-100 hover:bg-primary hover:text-white text-slate-700 font-semibold py-2.5 rounded-xl transition text-sm flex items-center justify-center gap-2">
-                            <span>التفاصيل</span> <i class="fa-solid fa-arrow-left"></i>
-                        </button>
                     </div>
                 </div>
 
-                <!-- Project 2 -->
-                <div class="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition border border-slate-200 flex flex-col">
-                    <div class="h-48 bg-emerald-600 relative overflow-hidden flex items-center justify-center text-white">
-                        <i class="fa-solid fa-seedling text-6xl opacity-30 absolute"></i>
-                        <h4 class="text-xl font-bold relative z-10 px-4 text-center">التحول لنظم الري الحديث</h4>
-                    </div>
-                    <div class="p-6 flex-1 flex flex-col justify-between">
-                        <div>
-                            <p class="text-sm text-slate-600 leading-relaxed mb-4">
-                                دعم المزارعين للتحول من الري بالغمر إلى الري بالرش والتنقيط في بساتين الفاكهة ومزارع الخضروات وقصب السكر، مما يقلل استهلاك الأسمدة ويزيد الإنتاجية.
+                <!-- Timeline -->
+                <div class="relative border-r-4 border-primary/30 mr-4 md:mr-8 space-y-10 pb-8">
+                    
+                    <!-- Milestone 1 -->
+                    <div class="relative pr-8">
+                        <div class="absolute -right-3.5 top-1 w-6 h-6 bg-primary rounded-full border-4 border-white shadow"></div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <span class="text-xs font-bold text-white bg-primary px-3 py-1 rounded-full">1977 - 1984</span>
+                            <h4 class="text-lg font-bold text-slate-900 mt-3 mb-2">مرحلة الدراسات والتجارب البحثية (EWUP)</h4>
+                            <p class="text-sm text-slate-600 leading-relaxed">
+                                انطلاق مشروع استخدام وإدارة المياه في مصر (EWUP) بالتعاون مع مراكز البحوث، حيث تم إجراء تجارب ميدانية في مناطق (المنيا، كفر الشيخ، القليوبية) لدراسة أسباب الفاقد المائي على مستوى الحقل والمسقى، ووضع الأسس العلمية لتطوير المساقي الخصوصية.
                             </p>
                         </div>
-                        <button onclick="openModal('التحول لنظم الري الحديث', 'يوفر القطاع قروضاً ميسرة وبرامج توعوية للمزارعين لتحويل أراضيهم للري الحديث مع تقديم الدعم الفني الكامل طوال فترة الزراعة.')" class="w-full bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-700 font-semibold py-2.5 rounded-xl transition text-sm flex items-center justify-center gap-2">
-                            <span>التفاصيل</span> <i class="fa-solid fa-arrow-left"></i>
-                        </button>
                     </div>
-                </div>
 
-                <!-- Project 3 -->
-                <div class="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition border border-slate-200 flex flex-col">
-                    <div class="h-48 bg-amber-600 relative overflow-hidden flex items-center justify-center text-white">
-                        <i class="fa-solid fa-people-group text-6xl opacity-30 absolute"></i>
-                        <h4 class="text-xl font-bold relative z-10 px-4 text-center">روابط مستخدمي المياه</h4>
-                    </div>
-                    <div class="p-6 flex-1 flex flex-col justify-between">
-                        <div>
-                            <p class="text-sm text-slate-600 leading-relaxed mb-4">
-                                بناء قدرات المزارعين وتنظيمهم في روابط على مستوى المساقي والترع الفرعية لتولي مسئولية إدارة وتشغيل وصيانة شبكات الري الخصوصية بأنفسهم بالتعاون مع الوزارة.
+                    <!-- Milestone 2 -->
+                    <div class="relative pr-8">
+                        <div class="absolute -right-3.5 top-1 w-6 h-6 bg-emerald-600 rounded-full border-4 border-white shadow"></div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <span class="text-xs font-bold text-white bg-emerald-600 px-3 py-1 rounded-full">1989</span>
+                            <h4 class="text-lg font-bold text-slate-900 mt-3 mb-2">التأسيس الرسمي لقطاع تطوير الري (IIS)</h4>
+                            <p class="text-sm text-slate-600 leading-relaxed">
+                                بعد النجاح الكبير للمشروعات التجريبية، تم إنشاء قطاع تطوير الري رسمياً كقطاع مركزي بالوزارة، وبدأ تنفيذ المشروع القومي الأول لتطوير الري في الأراضي القديمة (IIP) بتمويل من البنك الدولي وصناديق التنمية الدولية، مع إدخال مفهوم "نقطة الرفع الواحدة" على المسقى.
                             </p>
                         </div>
-                        <button onclick="openModal('روابط مستخدمي المياه', 'تم تأسيس آلاف الروابط لضمان العدالة في توزيع المياه وحل النزاعات بين المزارعين على المساقي الفرعية بصورة ودية وحضارية.')" class="w-full bg-slate-100 hover:bg-amber-600 hover:text-white text-slate-700 font-semibold py-2.5 rounded-xl transition text-sm flex items-center justify-center gap-2">
-                            <span>التفاصيل</span> <i class="fa-solid fa-arrow-left"></i>
-                        </button>
+                    </div>
+
+                    <!-- Milestone 3 -->
+                    <div class="relative pr-8">
+                        <div class="absolute -right-3.5 top-1 w-6 h-6 bg-amber-600 rounded-full border-4 border-white shadow"></div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <span class="text-xs font-bold text-white bg-amber-600 px-3 py-1 rounded-full">1994 - 2005</span>
+                            <h4 class="text-lg font-bold text-slate-900 mt-3 mb-2">تشريع روابط مستخدمي المياه والتوسع في الدلتا</h4>
+                            <p class="text-sm text-slate-600 leading-relaxed">
+                                صدور تعديلات قانون الري والصرف التي منحت الشرعية القانونية لـ "روابط مستخدمي المياه" على مستوى المساقي، وإنشاء إدارات التوجيه المائي داخل القطاع لتدريب المزارعين على إدارة وتشغيل وصيانة شبكات الري المطورة ذاتياً.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Milestone 4 -->
+                    <div class="relative pr-8">
+                        <div class="absolute -right-3.5 top-1 w-6 h-6 bg-cyan-600 rounded-full border-4 border-white shadow"></div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <span class="text-xs font-bold text-white bg-cyan-600 px-3 py-1 rounded-full">2006 - 2018</span>
+                            <h4 class="text-lg font-bold text-slate-900 mt-3 mb-2">الإدارة المتكاملة وتطوير المراوي الحقلية</h4>
+                            <p class="text-sm text-slate-600 leading-relaxed">
+                                الانتقال من تطوير المساقي فقط إلى "التطوير المتكامل" (IIIMP) الذي يشمل الترعة الفرعية، المسقى، والمروى الحقلي، مع إدخال المواسير المدفونة (PVC) بدلاً من المساقي المكشوفة، وإدخال الطاقة الشمسية في تشغيل طلمبات الرفع.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Milestone 5 -->
+                    <div class="relative pr-8">
+                        <div class="absolute -right-3.5 top-1 w-6 h-6 bg-indigo-600 rounded-full border-4 border-white shadow"></div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <span class="text-xs font-bold text-white bg-indigo-600 px-3 py-1 rounded-full">2019 - حتى الآن</span>
+                            <h4 class="text-lg font-bold text-slate-900 mt-3 mb-2">المشروع القومي لتأهيل الترع والتحول للري الحديث</h4>
+                            <p class="text-sm text-slate-600 leading-relaxed">
+                                قيادة القطاع للنهضة المائية الحديثة من خلال المشروع القومي لتأهيل وتبطين الترع، والمبادرة الرئاسية للتحول من الري بالغمر إلى نظم الري الحديث (التنقيط والرش)، وتطبيق التحول الرقمي ونظم التليمتري لمراقبة مناسيب المياه.
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE 3: 14 PROJECTS PAGE -->
+        <div id="page-projects" class="page-section py-16 px-4 bg-slate-100">
+            <div class="container mx-auto max-w-7xl">
+                <div class="text-center max-w-3xl mx-auto mb-12">
+                    <span class="text-primary font-bold text-sm bg-primary/10 px-4 py-1.5 rounded-full uppercase">محفظة المشروعات القومية والتنموية</span>
+                    <h2 class="text-3xl md:text-4xl font-black text-slate-900 mt-4 mb-4">مشروعات قطاع تطوير الري (14 مشروعاً)</h2>
+                    <p class="text-slate-600">
+                        استعراض شامل لكافة المشروعات القومية والمشروعات الممولة دولياً التي ينفذها ويشرف عليها قطاع تطوير الري في مختلف محافظات مصر.
+                    </p>
+                </div>
+
+                <!-- Filter Buttons -->
+                <div class="flex flex-wrap justify-center gap-2 mb-10">
+                    <button onclick="filterProjects('all')" class="filter-btn active bg-primary text-white px-5 py-2 rounded-xl text-sm font-bold shadow transition">جميع المشروعات (14)</button>
+                    <button onclick="filterProjects('national')" class="filter-btn bg-white text-slate-600 hover:bg-slate-200 px-5 py-2 rounded-xl text-sm font-bold shadow-sm transition">مشروعات قومية كبرى</button>
+                    <button onclick="filterProjects('modern')" class="filter-btn bg-white text-slate-600 hover:bg-slate-200 px-5 py-2 rounded-xl text-sm font-bold shadow-sm transition">الري الحديث والطاقة</button>
+                    <button onclick="filterProjects('integrated')" class="filter-btn bg-white text-slate-600 hover:bg-slate-200 px-5 py-2 rounded-xl text-sm font-bold shadow-sm transition">التطوير المتكامل والتعاون الدولي</button>
+                </div>
+
+                <!-- Projects Grid (Populated via JS for clean structure of all 14 projects) -->
+                <div id="projectsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- 14 Projects will be injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE 4: FARMER SERVICES -->
+        <div id="page-services" class="page-section py-16 px-4">
+            <div class="container mx-auto max-w-6xl">
+                <div class="text-center max-w-2xl mx-auto mb-16">
+                    <span class="text-primary font-bold text-sm bg-primary/10 px-3 py-1 rounded-full uppercase">خدمات المزارعين</span>
+                    <h3 class="text-3xl font-extrabold text-slate-900 mt-3 mb-4">كيف يدعم قطاع تطوير الري المزارع المصري؟</h3>
+                    <p class="text-slate-600">خدمات إرشادية وتسهيلات فنية لتطوير الحيازة الزراعية.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center hover:border-primary transition">
+                        <div class="w-14 h-14 bg-primary/10 text-primary text-2xl rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <i class="fa-solid fa-screwdriver-wrench"></i>
+                        </div>
+                        <h4 class="font-bold text-lg mb-2 text-slate-900">الدعم الفني والهندسي</h4>
+                        <p class="text-xs text-slate-500 leading-relaxed">توفير مهندسين استشاريين لمعاينة الأراضي الزراعية واقتراح أنظمة الري المناسبة لكل تربة.</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center hover:border-primary transition">
+                        <div class="w-14 h-14 bg-emerald-600/10 text-emerald-600 text-2xl rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <i class="fa-solid fa-file-invoice-dollar"></i>
+                        </div>
+                        <h4 class="font-bold text-lg mb-2 text-slate-900">تيسير التمويل والقروض</h4>
+                        <p class="text-xs text-slate-500 leading-relaxed">قروض بدون فوائد أو بفائدة مخفضة على أقساط ميسرة لتركيب شبكات الري الحديث بالتعاون مع البنوك الوطنية.</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center hover:border-primary transition">
+                        <div class="w-14 h-14 bg-amber-600/10 text-amber-600 text-2xl rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                        </div>
+                        <h4 class="font-bold text-lg mb-2 text-slate-900">ندوات وتدريب عملي</h4>
+                        <p class="text-xs text-slate-500 leading-relaxed">تنظيم دورات وحقول إرشادية لتعريف المزارعين بأحدث أساليب إدارة وتسميد الأراضي عبر شبكات الري.</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center hover:border-primary transition">
+                        <div class="w-14 h-14 bg-cyan-600/10 text-cyan-600 text-2xl rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <h4 class="font-bold text-lg mb-2 text-slate-900">حل الشكاوي ومراقبة المناسيب</h4>
+                        <p class="text-xs text-slate-500 leading-relaxed">استقبال شكاوى المزارعين الخاصة بنقص المياه أو التعديات على الترع وحلها في أسرع وقت ممكن.</p>
                     </div>
                 </div>
             </div>
         </div>
-    </section>
 
-    <!-- Farmer Services Section -->
-    <section id="services" class="py-20 px-4">
-        <div class="container mx-auto max-w-6xl">
-            <div class="text-center max-w-2xl mx-auto mb-16">
-                <span class="text-primary font-bold text-sm bg-primary/10 px-3 py-1 rounded-full uppercase">خدمات المزارعين</span>
-                <h3 class="text-3xl font-extrabold text-slate-900 mt-3 mb-4">كيف يدعم قطاع تطوير الري المزارع المصري؟</h3>
-                <p class="text-slate-600">خدمات إرشادية وتسهيلات فنية لتطوير الحيازة الزراعية.</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center hover:border-primary transition">
-                    <div class="w-14 h-14 bg-primary/10 text-primary text-2xl rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <i class="fa-solid fa-screwdriver-wrench"></i>
-                    </div>
-                    <h4 class="font-bold text-lg mb-2 text-slate-900">الدعم الفني والهندسي</h4>
-                    <p class="text-xs text-slate-500 leading-relaxed">توفير مهندسين استشاريين لمعاينة الأراضي الزراعية واقتراح أنظمة الري المناسبة لكل تربة.</p>
+        <!-- PAGE 5: CALCULATOR -->
+        <div id="page-calculator" class="page-section py-16 px-4 bg-slate-900 text-white min-h-[75vh] flex items-center">
+            <div class="container mx-auto max-w-4xl">
+                <div class="text-center mb-12">
+                    <span class="text-emerald-400 font-bold text-sm bg-emerald-950 px-3 py-1 rounded-full uppercase">أدوات ذكية للمزارع</span>
+                    <h3 class="text-3xl font-extrabold mt-3 mb-2">حاسبة تقدير توفير المياه والإنتاجية</h3>
+                    <p class="text-slate-400 text-sm">أدخل مساحة أرضك بالـ "فدان" لاحتساب التقريبي للتوفير المالي والمائي عند التحول للري الحديث.</p>
                 </div>
 
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center hover:border-primary transition">
-                    <div class="w-14 h-14 bg-emerald-600/10 text-emerald-600 text-2xl rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <i class="fa-solid fa-file-invoice-dollar"></i>
-                    </div>
-                    <h4 class="font-bold text-lg mb-2 text-slate-900">تيسير التمويل والقروض</h4>
-                    <p class="text-xs text-slate-500 leading-relaxed">قروض بدون فوائد أو بفائدة مخفضة على أقساط ميسرة لتركيب شبكات الري الحديث بالتعاون مع البنوك الوطنية.</p>
-                </div>
-
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center hover:border-primary transition">
-                    <div class="w-14 h-14 bg-amber-600/10 text-amber-600 text-2xl rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <i class="fa-solid fa-graduation-cap"></i>
-                    </div>
-                    <h4 class="font-bold text-lg mb-2 text-slate-900">ندوات وتدريب عملي</h4>
-                    <p class="text-xs text-slate-500 leading-relaxed">تنظيم دورات وحقول إرشادية لتعريف المزارعين بأحدث أساليب إدارة وتسميد الأراضي عبر شبكات الري.</p>
-                </div>
-
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center hover:border-primary transition">
-                    <div class="w-14 h-14 bg-cyan-600/10 text-cyan-600 text-2xl rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <i class="fa-solid fa-shield-halved"></i>
-                    </div>
-                    <h4 class="font-bold text-lg mb-2 text-slate-900">حل الشكاوي ومراقبة المناسيب</h4>
-                    <p class="text-xs text-slate-500 leading-relaxed">استقبال شكاوى المزارعين الخاصة بنقص المياه أو التعديات على الترع وحلها في أسرع وقت ممكن.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Interactive Water Calculator Section -->
-    <section id="calculator" class="py-20 px-4 bg-slate-900 text-white">
-        <div class="container mx-auto max-w-4xl">
-            <div class="text-center mb-12">
-                <span class="text-emerald-400 font-bold text-sm bg-emerald-950 px-3 py-1 rounded-full uppercase">أدوات ذكية للمزارع</span>
-                <h3 class="text-3xl font-extrabold mt-3 mb-2">حاسبة تقدير توفير المياه والإنتاجية</h3>
-                <p class="text-slate-400 text-sm">أدخل مساحة أرضك بالـ "فدان" لاحتساب التقريبي للتوفير المالي والمائي عند التحول للري الحديث.</p>
-            </div>
-
-            <div class="bg-slate-800 p-8 rounded-3xl shadow-2xl border border-slate-700">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div>
-                        <label class="block text-sm font-semibold mb-2 text-slate-300">مساحة الأرض الزراعية (بالفدان):</label>
-                        <input type="number" id="feddanInput" value="5" min="1" max="1000" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold mb-2 text-slate-300">نوع المحصول السائد:</label>
-                        <select id="cropType" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary">
-                            <option value="1.2">خضروات وبساتين (توفير عالي)</option>
-                            <option value="1.0">قصب سكر / ذرة (توفير ممتاز)</option>
-                            <option value="0.8">محاصيل حقلية أخرى</option>
-                        </select>
-                    </div>
-                </div>
-
-                <button onclick="calculateSavings()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl shadow-lg transition">
-                    احسب التوفير الآن
-                </button>
-
-                <div id="calcResult" class="hidden mt-8 p-6 bg-slate-900/80 rounded-2xl border border-emerald-500/30 text-center animate-pulse">
-                    <h4 class="text-emerald-400 font-bold text-lg mb-2">النتائج التقديرية للتحول للري الحديث:</h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
-                        <div class="bg-slate-800 p-3 rounded-xl">
-                            <div class="text-xs text-slate-400">توفير المياه السنوي</div>
-                            <div id="waterSaved" class="text-xl font-black text-cyan-400 mt-1">0 متر مكعب</div>
-                        </div>
-                        <div class="bg-slate-800 p-3 rounded-xl">
-                            <div class="text-xs text-slate-400">زيادة المحصول التقريبية</div>
-                            <div id="cropIncrease" class="text-xl font-black text-emerald-400 mt-1">0 %</div>
-                        </div>
-                        <div class="bg-slate-800 p-3 rounded-xl">
-                            <div class="text-xs text-slate-400">توفير تكاليف الأسمدة والعمالة</div>
-                            <div id="moneySaved" class="text-xl font-black text-amber-400 mt-1">0 جنيه تقريباً</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Contact & Feedback Section -->
-    <section id="contact" class="py-20 px-4 bg-slate-100">
-        <div class="container mx-auto max-w-5xl">
-            <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200 grid grid-cols-1 md:grid-cols-2">
-                <div class="p-10 bg-primary text-white flex flex-col justify-between">
-                    <div>
-                        <span class="bg-white/20 px-3 py-1 rounded-full text-xs font-bold uppercase inline-block mb-4">تواصل معنا</span>
-                        <h3 class="text-3xl font-extrabold mb-4">نحن هنا لخدمة المزارع المصري وتلبية استفساراتكم</h3>
-                        <p class="text-slate-100 text-sm leading-relaxed mb-8">
-                            يمكنكم التواصل مع قطاع تطوير الري بوزارة الموارد المائية والري عبر القنوات الرسمية أو تقديم رسالة مباشرة عبر النموذج.
-                        </p>
-                    </div>
-                    <div class="space-y-4 text-sm">
-                        <div class="flex items-center space-x-3 space-x-reverse">
-                            <i class="fa-solid fa-location-dot text-emerald-400 text-lg"></i>
-                            <span>كورنيش النيل، العجوزة، الجيزة، مصر</span>
-                        </div>
-                        <div class="flex items-center space-x-3 space-x-reverse">
-                            <i class="fa-solid fa-phone text-emerald-400 text-lg"></i>
-                            <span>الخط الساخن: 16552</span>
-                        </div>
-                        <div class="flex items-center space-x-3 space-x-reverse">
-                            <i class="fa-solid fa-envelope text-emerald-400 text-lg"></i>
-                            <span>info@iis.mwri.gov.eg</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="p-10">
-                    <h3 class="text-2xl font-bold text-slate-900 mb-6">أرسل لنا استفسارك أو شكواك</h3>
-                    <form onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <div class="bg-slate-800 p-8 rounded-3xl shadow-2xl border border-slate-700">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">الاسم الكامل</label>
-                            <input type="text" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="أدخل اسمك الكريم">
+                            <label class="block text-sm font-semibold mb-2 text-slate-300">مساحة الأرض الزراعية (بالفدان):</label>
+                            <input type="number" id="feddanInput" value="5" min="1" max="1000" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">رقم الهاتف</label>
-                            <input type="tel" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="01xxxxxxxxx">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">نوع الطلب / الشكوى</label>
-                            <select class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary">
-                                <option>استفسار عن تأهيل الترع</option>
-                                <option>طلب دعم فني للري الحديث</option>
-                                <option>شكوى خاصة بمناسيب المياه</option>
-                                <option>أخرى</option>
+                            <label class="block text-sm font-semibold mb-2 text-slate-300">نوع المحصول السائد:</label>
+                            <select id="cropType" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary">
+                                <option value="1.2">خضروات وبساتين (توفير عالي)</option>
+                                <option value="1.0">قصب سكر / ذرة (توفير ممتاز)</option>
+                                <option value="0.8">محاصيل حقلية أخرى</option>
                             </select>
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">الرسالة</label>
-                            <textarea rows="3" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="اكتب تفاصيل طلبك هنا..."></textarea>
+                    </div>
+
+                    <button onclick="calculateSavings()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl shadow-lg transition">
+                        احسب التوفير الآن
+                    </button>
+
+                    <div id="calcResult" class="hidden mt-8 p-6 bg-slate-900/80 rounded-2xl border border-emerald-500/30 text-center">
+                        <h4 class="text-emerald-400 font-bold text-lg mb-2">النتائج التقديرية للتحول للري الحديث:</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+                            <div class="bg-slate-800 p-3 rounded-xl">
+                                <div class="text-xs text-slate-400">توفير المياه السنوي</div>
+                                <div id="waterSaved" class="text-xl font-black text-cyan-400 mt-1">0 متر مكعب</div>
+                            </div>
+                            <div class="bg-slate-800 p-3 rounded-xl">
+                                <div class="text-xs text-slate-400">زيادة المحصول التقريبية</div>
+                        <div class="relative">
+                            <img src="https://placehold.co/600x400/ccfbf1/0f766e?text=IIS+Egypt+Water" alt="قطاع تطوير الري" class="rounded-2xl shadow-xl w-full border-4 border-white">
+                            <div class="absolute -bottom-6 -right-6 bg-darkBg text-white p-6 rounded-2xl shadow-2xl hidden sm:block max-w-xs">
+                                <div class="text-amber-400 font-bold text-lg mb-1"><i class="fa-solid fa-circle-check"></i> استدامة مائية</div>
+                                <p class="text-xs text-slate-300">تأمين الاحتياجات المائية الحالية والمستقبلية للأجيال القادمة.</p>
+                            </div>
                         </div>
-                        <button type="submit" class="w-full bg-primary hover:bg-secondary text-white font-bold py-3.5 rounded-xl shadow transition text-sm">
-                            إرسال الطلب
-                        </button>
-                    </form>
+        <!-- PAGE 5: CALCULATOR -->
+        <div id="page-calculator" class="page-section py-16 px-4 bg-darkBg text-white min-h-[75vh] flex items-center">
+            <div class="container mx-auto max-w-4xl">
+                <div class="text-center mb-12">
+                    <span class="text-amber-400 font-bold text-sm bg-amber-950/60 px-3 py-1 rounded-full uppercase">أدوات ذكية للمزارع</span>
+                    <h3 class="text-3xl font-extrabold mt-3 mb-2">حاسبة تقدير توفير المياه والإنتاجية</h3>
+                    <p class="text-teal-100/70 text-sm">أدخل مساحة أرضك بالـ "فدان" لاحتساب التقريبي للتوفير المالي والمائي عند التحول للري الحديث.</p>
+                </div>
+
+                <div class="bg-teal-950/80 p-8 rounded-3xl shadow-2xl border border-teal-800">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-sm font-semibold mb-2 text-teal-100">مساحة الأرض الزراعية (بالفدان):</label>
+                            <input type="number" id="feddanInput" value="5" min="1" max="1000" class="w-full bg-darkBg border border-teal-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-accent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-2 text-teal-100">نوع المحصول السائد:</label>
+                            <select id="cropType" class="w-full bg-darkBg border border-teal-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-accent">
+                                <option value="1.2">خضروات وبساتين (توفير عالي)</option>
+                                <option value="1.0">قصب سكر / ذرة (توفير ممتاز)</option>
+                                <option value="0.8">محاصيل حقلية أخرى</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button onclick="calculateSavings()" class="w-full bg-accent hover:bg-amber-600 text-white font-bold py-3.5 rounded-xl shadow-lg transition">
+                        احسب التوفير الآن
+                    </button>
+
+                    <div id="calcResult" class="hidden mt-8 p-6 bg-darkBg/90 rounded-2xl border border-accent/40 text-center">
+                        <h4 class="text-amber-400 font-bold text-lg mb-2">النتائج التقديرية للتحول للري الحديث:</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+                            <div class="bg-teal-950 p-3 rounded-xl border border-teal-800">
+                                <div class="text-xs text-teal-200">توفير المياه السنوي</div>
+                                <div id="waterSaved" class="text-xl font-black text-teal-300 mt-1">0 متر مكعب</div>
+                            </div>
+                            <div class="bg-teal-950 p-3 rounded-xl border border-teal-800">
+                                <div class="text-xs text-teal-200">زيادة المحصول التقريبية</div>
+                                <div id="cropIncrease" class="text-xl font-black text-emerald-400 mt-1">0 %</div>
+                            </div>
+                            <div class="bg-teal-950 p-3 rounded-xl border border-teal-800">
+                                <div class="text-xs text-teal-200">توفير تكاليف الأسمدة والعمالة</div>
+                                <div id="moneySaved" class="text-xl font-black text-amber-400 mt-1">0 جنيه تقريباً</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </section>
+
+        <!-- PAGE 6: CONTACT -->
+        <div id="page-contact" class="page-section py-16 px-4 bg-slate-100">
+            <div class="container mx-auto max-w-6xl space-y-10">
+                
+                <!-- Top Contact Channels Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-phone-volume"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-500 font-bold">الخط الساخن الموحد</div>
+                            <div class="text-lg font-black text-slate-900">16552</div>
+                            <div class="text-[11px] text-primary">متاح على مدار 24 ساعة</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-600/10 text-emerald-600 flex items-center justify-center text-2xl shrink-0">
+                            <i class="fa-brands fa-whatsapp"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-500 font-bold">واتساب الشكاوى السريعة</div>
+                            <div class="text-base font-black text-slate-900" dir="ltr">0100 001 6552</div>
+                            <div class="text-[11px] text-emerald-600">إرسال صور وموقع الشكوى</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-accent/10 text-accent flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-envelope-open-text"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-500 font-bold">البريد الإلكتروني الرسمي</div>
+                            <div class="text-sm font-bold text-slate-900">info@iis.mwri.gov.eg</div>
+                            <div class="text-[11px] text-accent">للمراسلات والاستفسارات</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-blue-600/10 text-blue-600 flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-building-columns"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-500 font-bold">المقر الرئيسي للقطاع</div>
+                            <div class="text-sm font-bold text-slate-900">العجوزة - الجيزة</div>
+                            <div class="text-[11px] text-slate-500">مبنى وزارة الري - الدور 5</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Contact Form & Regional Offices -->
+                <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200 grid grid-cols-1 lg:grid-cols-5">
+                    <div class="lg:col-span-2 p-8 md:p-10 bg-primary text-white flex flex-col justify-between">
+                        <div>
+                            <span class="bg-white/20 px-3 py-1 rounded-full text-xs font-bold uppercase inline-block mb-4">قنوات التواصل والإدارات</span>
+                            <h3 class="text-2xl md:text-3xl font-extrabold mb-4">نحن هنا لخدمة المزارع المصري</h3>
+                            <p class="text-teal-100 text-sm leading-relaxed mb-6">
+                                يمكنك التواصل مباشرة مع الإدارة المركزية أو أحد مكاتب الإدارات العامة لتطوير الري بالمحافظات.
+                            </p>
+                            
+                            <!-- Regional Offices List -->
+                            <div class="space-y-3 text-xs bg-secondary/60 p-4 rounded-2xl border border-teal-600/40 mb-6">
+                                <div class="font-bold text-amber-300 text-sm mb-1"><i class="fa-solid fa-map-pin ml-1"></i> أرقام الإدارات الإقليمية:</div>
+                                <div class="flex justify-between border-b border-teal-600/40 pb-1.5">
+                                    <span>إدارة غرب الدلتا (دمنهور):</span>
+                                    <span class="font-bold" dir="ltr">045-3318420</span>
+                                </div>
+                                <div class="flex justify-between border-b border-teal-600/40 pb-1.5">
+                                    <span>إدارة وسط الدلتا (طنطا):</span>
+                                    <span class="font-bold" dir="ltr">040-3335190</span>
+                                </div>
+                                <div class="flex justify-between border-b border-teal-600/40 pb-1.5">
+                                    <span>إدارة شرق الدلتا (الزقازيق):</span>
+                                    <span class="font-bold" dir="ltr">055-2304112</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>إدارة مصر الوسطى والعليا (المنيا):</span>
+                                    <span class="font-bold" dir="ltr">086-2364510</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Social Media Links -->
+                        <div>
+                            <div class="text-xs font-bold text-teal-200 mb-3">تابع أخبار القطاع عبر المنصات الرسمية:</div>
+                            <div class="flex items-center gap-3">
+                                <button onclick="openModal('الصفحة الرسمية على فيسبوك', 'يمكنكم متابعة أحدث أخبار مشروعات قطاع تطوير الري عبر الصفحة الرسمية لوزارة الموارد المائية والري على فيسبوك: fb.com/MWRI.Egypt')" class="w-10 h-10 rounded-xl bg-white/15 hover:bg-accent transition flex items-center justify-center text-white text-lg">
+                                    <i class="fa-brands fa-facebook-f"></i>
+                                </button>
+                                <button onclick="openModal('القناة الرسمية على يوتيوب', 'شاهد الفيديوهات التوعوية والإرشادية للمزارعين حول نظم الري الحديث عبر قناة الوزارة على يوتيوب.')" class="w-10 h-10 rounded-xl bg-white/15 hover:bg-accent transition flex items-center justify-center text-white text-lg">
+                                    <i class="fa-brands fa-youtube"></i>
+                                </button>
+                                <button onclick="openModal('منصة إكس (تويتر)', 'تابع البيانات الرسمية والتقارير الدورية لقطاع تطوير الري على منصة إكس (@MWRI_Egypt).')" class="w-10 h-10 rounded-xl bg-white/15 hover:bg-accent transition flex items-center justify-center text-white text-lg">
+                                    <i class="fa-brands fa-x-twitter"></i>
+                                </button>
+                                <button onclick="openModal('بوابة الشكاوى الحكومية الموحدة', 'يمكنك أيضاً تسجيل شكواك عبر منظومة الشكاوى الحكومية الموحدة برئاسة مجلس الوزراء على الرقم 16528.')" class="w-10 h-10 rounded-xl bg-white/15 hover:bg-accent transition flex items-center justify-center text-white text-lg">
+                                    <i class="fa-solid fa-globe"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-3 p-8 md:p-10">
+                        <h3 class="text-2xl font-bold text-slate-900 mb-2">أرسل لنا استفسارك أو شكواك إلكترونياً</h3>
+                        <p class="text-xs text-slate-500 mb-6">سيتم توجيه رسالتك تلقائياً إلى الإدارة الهندسية المختصة بزمام أرضك الزراعية.</p>
+                        <form onsubmit="handleFormSubmit(event)" class="space-y-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-600 mb-1">الاسم الكامل</label>
+                                    <input type="text" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="أدخل اسمك الكريم">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-600 mb-1">رقم الهاتف (يفضل واتساب)</label>
+                                    <input type="tel" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="01xxxxxxxxx">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-600 mb-1">المحافظة / الإدارة التابع لها</label>
+                                    <select class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary">
+                                        <option>البحيرة / الإسكندرية (غرب الدلتا)</option>
+                                        <option>كفر الشيخ / الغربية (وسط الدلتا)</option>
+                                        <option>الشرقية / الدقهلية / القليوبية (شرق الدلتا)</option>
+                                        <option>الفيوم / بني سويف / المنيا (مصر الوسطى)</option>
+                                        <option>أسيوط / سوهاج / قنا / أسوان (مصر العليا)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-600 mb-1">نوع الطلب / الشكوى</label>
+                                    <select class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary">
+                                        <option>استفسار عن تأهيل الترع والمساقي</option>
+                                        <option>طلب دعم فني للتحول للري الحديث</option>
+                                        <option>شكوى خاصة بمناسيب المياه أو تطهير</option>
+                                        <option>تأسيس أو تفعيل رابطة مستخدمي مياه</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">تفاصيل الرسالة واسم الترعة / المسقى</label>
+                                <textarea rows="3" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary" placeholder="اكتب تفاصيل طلبك واسم الترعة والقرية بدقة..."></textarea>
+                            </div>
+                            <button type="submit" class="w-full bg-primary hover:bg-secondary text-white font-bold py-3.5 rounded-xl shadow transition text-sm flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-paper-plane"></i> إرسال الطلب الآن
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
 
     <!-- Footer -->
-    <footer class="bg-slate-900 text-slate-400 py-12 px-4 mt-auto border-t border-slate-800">
+    <footer class="bg-darkBg text-teal-100/70 py-10 px-4 mt-auto border-t border-teal-900">
         <div class="container mx-auto max-w-6xl flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-right">
             <div class="flex items-center space-x-3 space-x-reverse justify-center md:justify-start">
                 <div class="bg-primary text-white p-2.5 rounded-xl">
@@ -402,26 +668,254 @@
                     <p class="text-xs text-slate-500">جمهورية مصر العربية - وزارة الموارد المائية والري</p>
                 </div>
             </div>
+            <div class="flex flex-wrap justify-center gap-4 text-xs">
+                <button onclick="showPage('home')" class="hover:text-white transition">الرئيسية</button>
+                <button onclick="showPage('history')" class="hover:text-white transition">تاريخ القطاع</button>
+                <button onclick="showPage('projects')" class="hover:text-white transition">المشروعات (14)</button>
+                <button onclick="showPage('services')" class="hover:text-white transition">الخدمات</button>
+                <button onclick="showPage('calculator')" class="hover:text-white transition">الحاسبة</button>
+            </div>
             <div class="text-xs text-slate-500">
-                جميع الحقوق المحفوظة © قطاع تطوير الري (IIS) 2026
+                جميع الحقوق المحفوظة © قطاع تطوير الري (IIS)
             </div>
         </div>
     </footer>
 
     <!-- Custom Modal Popup (No alert() used) -->
     <div id="customModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
-            <div class="flex justify-between items-center mb-4">
-                <h3 id="modalTitle" class="text-xl font-bold text-slate-900">عنوان</h3>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
+            <div class="flex justify-between items-start mb-4 border-b border-slate-100 pb-3">
+                <div>
+                    <span id="modalBadge" class="hidden text-xs font-bold bg-primary/10 text-primary px-2.5 py-0.5 rounded-full mb-1 inline-block">تفاصيل المشروع</span>
+                    <h3 id="modalTitle" class="text-xl font-bold text-slate-900">عنوان</h3>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold leading-none">&times;</button>
             </div>
             <p id="modalBody" class="text-slate-600 text-sm leading-relaxed mb-6">محتوى الرسالة</p>
-            <button onclick="closeModal()" class="w-full bg-primary text-white py-3 rounded-xl font-semibold text-sm hover:bg-secondary transition">حسناً</button>
+            <button onclick="closeModal()" class="w-full bg-primary text-white py-3 rounded-xl font-semibold text-sm hover:bg-secondary transition">إغلاق</button>
         </div>
     </div>
 
     <!-- JavaScript Logic -->
     <script>
+        // Data for the 14 Projects of Irrigation Improvement Sector (IIS)
+        const projectsData = [
+            {
+                id: 1,
+                title: "المشروع القومي لتأهيل وتبطين الترع",
+                category: "national",
+                color: "bg-primary",
+                icon: "fa-water",
+                shortDesc: "تأهيل وتبطين الترع المتعبة لضمان وصول المياه لنهايات الترع بعدالة وكفاءة عالية.",
+                fullDetails: "يستهدف المشروع القومي لتأهيل الترع استعادة القطاعات التصميمية للترع الفرعية، والحد من الفواقد المائية الناتجة عن التسرب والبخر، وتقليل تكاليف الصيانة السنوية وإزالة الحشائش، مما يحقق عدالة توزيع المياه بين المزارعين في بدايات ونهايات الترع."
+            },
+            {
+                id: 2,
+                title: "المشروع القومي للتحول لنظم الري الحديث",
+                category: "modern",
+                color: "bg-accent",
+                icon: "fa-seedling",
+                shortDesc: "التحول من الري بالغمر إلى الري بالرش والتنقيط لرفع إنتاجية الفدان وتوفير المياه.",
+                fullDetails: "يعمل القطاع على تقديم الدعم الفني والإرشادي وتيسير التمويل للمزارعين لتحويل أراضيهم من الري بالغمر التقليدي إلى نظم الري الحديث (التنقيط والرش)، مما يوفر نحو 30% إلى 40% من مياه الري ويزيد الإنتاجية المحصولية."
+            },
+            {
+                id: 3,
+                title: "مشروع الإدارة المتكاملة وتحسين الري (IIIMP)",
+                category: "integrated",
+                color: "bg-teal-700",
+                icon: "fa-diagram-project",
+                shortDesc: "تطوير منظومة الري بشكل متكامل في زمام ترعتي المحمودية وميت يزيد.",
+                fullDetails: "يهدف المشروع إلى تحسين إدارة الموارد المائية والري في زمام حوالي 500 ألف فدان بمنطقتي المحمودية (البحيرة) وميت يزيد (كفر الشيخ والغربية)، ويشمل تطوير الترع الفرعية والمساقي وتشكيل مجالس المياه."
+            },
+            {
+                id: 4,
+                title: "مشروع تطوير الري في الأراضي القديمة (IIP)",
+                category: "national",
+                color: "bg-secondary",
+                icon: "fa-faucet-drip",
+                shortDesc: "تحديث المساقي الخصوصية وتحويلها إلى مواسير مدفونة بنقطة رفع واحدة.",
+                fullDetails: "يركز المشروع على استبدال المساقي الترابية المكشوفة بمواسير (PVC) مدفونة تحت الأرض تعمل بنقطة رفع جماعية واحدة، مما يوفر المساحات المهدرة في الجسور ويمنع تلوث المياه."
+            },
+            {
+                id: 5,
+                title: "مشروع تطوير الري في صعيد مصر (المرحلة الثانية)",
+                category: "integrated",
+                color: "bg-amber-600",
+                icon: "fa-sun",
+                shortDesc: "رفع كفاءة شبكات الري والمساقي في محافظات الوجه القبلي وتحسين معيشة صغار المزارعين.",
+                fullDetails: "يستهدف المشروع تطوير البنية التحتية للري في محافظات الصعيد (المنيا، أسيوط، سوهاج، قنا)، مع التركيز على محاصيل قصب السكر والبساتين، وتدريب روابط مستخدمي المياه."
+            },
+            {
+                id: 6,
+                title: "مشروع تأهيل المساقي الخصوصية",
+                category: "national",
+                color: "bg-teal-600",
+                icon: "fa-water-ladder",
+                shortDesc: "استكمال منظومة تأهيل الترع بتطوير المساقي الخصوصية لضمان كفاءة النقل حتى الحقل.",
+                fullDetails: "يتكامل هذا المشروع مع تأهيل الترع الفرعية حيث يتم تأهيل وتبطين المساقي الخصوصية أو تحويلها لمواسير مضغوطة لتسهيل ربطها بشبكات الري الحديث داخل الحقول."
+            },
+            {
+                id: 7,
+                title: "مشروع تشغيل طلمبات الري بالطاقة الشمسية",
+                category: "modern",
+                color: "bg-amber-700",
+                icon: "fa-solar-panel",
+                shortDesc: "استبدال طلمبات الديزل بمحطات طاقة شمسية صديقة للبيئة على المساقي المطورة.",
+                fullDetails: "يهدف المشروع إلى تقليل الانبعاثات الكربونية وخفض تكاليف التشغيل والصيانة على المزارعين من خلال تركيب وحدات طاقة شمسية لتشغيل طلمبات الرفع على المساقي."
+            },
+            {
+                id: 8,
+                title: "مشروع تطوير الري بحقول قصب السكر",
+                category: "modern",
+                color: "bg-emerald-700",
+                icon: "fa-wheat-awn",
+                shortDesc: "إدخال نظم الري بالتنقيط المطور في زراعات قصب السكر بأسوان والأقصر وقنا.",
+                fullDetails: "يعد محصول قصب السكر من المحاصيل الشرهة للمياه، ويعمل هذا المشروع على تنفيذ نماذج ري حديثة متطورة تزيد إنتاجية الفدان من 35 طن إلى أكثر من 55 طن مع توفير نصف كمية المياه."
+            },
+            {
+                id: 9,
+                title: "مشروع دعم وتفعيل روابط مستخدمي المياه (WUA)",
+                category: "national",
+                color: "bg-primary",
+                icon: "fa-people-group",
+                shortDesc: "بناء قدرات أكثر من 6,500 رابطة مزارعين لإدارة وصيانة شبكات الري ذاتياً.",
+                fullDetails: "يعمل جهاز التوجيه المائي بالقطاع على تأسيس وتدريب روابط مستخدمي المياه وتفعيل دور المرأة الريفية في إدارة المياه، لضمان استدامة المنشآت المائية وفض المنازعات."
+            },
+            {
+                id: 10,
+                title: "مشروع تحديث منظومة القياس والتليمتري (Telemetry)",
+                category: "modern",
+                color: "bg-teal-800",
+                icon: "fa-satellite-dish",
+                shortDesc: "تركيب أجهزة قياس آلية لمناسيب وتصرفات المياه على الترع الرئيسية والفرعية.",
+                fullDetails: "يساهم المشروع في التحول الرقمي لقطاع تطوير الري من خلال رصد مناسيب المياه لحظياً وإرسال البيانات لغرف العمليات المركزية لاتخاذ قرارات توزيع المياه بدقة."
+            },
+            {
+                id: 11,
+                title: "مشروع تطوير الري بغرب الدلتا (ترعة النوبارية)",
+                category: "integrated",
+                color: "bg-amber-600",
+                icon: "fa-map-location-dot",
+                shortDesc: "تحديث البنية التحتية لشبكات الري في أراضي الاستصلاح بغرب الدلتا.",
+                fullDetails: "يركز المشروع على رفع كفاءة نقل وتوزيع المياه في زمامات غرب الدلتا ومنطقة النوبارية، ومنع التعديات وضبط التصرفات المائية المقررة لكل زمام."
+            },
+            {
+                id: 12,
+                title: "مشروع تحسين الري في وسط وشرق الدلتا (بحر مويس)",
+                category: "integrated",
+                color: "bg-secondary",
+                icon: "fa-bridge-water",
+                shortDesc: "تطوير شبكات الترع والمساقي في محافظات الشرقية والدقهلية والقليوبية.",
+                fullDetails: "يشمل المشروع تأهيل الأعمال الصناعية والهدارات وبوابات التحكم على الترع الفرعية بوسط وشرق الدلتا لضمان وصول المياه للأراضي الواقعة في نهايات الشبكة."
+            },
+            {
+                id: 13,
+                title: "مشروع الإدارة المستدامة للموارد المائية بالفيوم",
+                category: "integrated",
+                color: "bg-emerald-800",
+                icon: "fa-droplet",
+                shortDesc: "تطوير منظومة توزيع المياه الفريدة بمحافظة الفيوم وحماية بحيرة قارون.",
+                fullDetails: "نظراً للطبيعة الطبوغرافية الخاصة لمحافظة الفيوم، يعمل هذا المشروع على تطوير الفتحات والمقاسم المائية وربطها بنظم الري الحديث لتقليل الصرف الزراعي الزائد."
+            },
+            {
+                id: 14,
+                title: "مشروع التكيف مع التغيرات المناخية في دلتا النيل",
+                category: "modern",
+                color: "bg-teal-900",
+                icon: "fa-earth-africa",
+                shortDesc: "تطبيق تقنيات الري الذكي لمواجهة ارتفاع درجات الحرارة وملوحة التربة.",
+                fullDetails: "يهدف المشروع إلى حماية الأراضي الزراعية في شمال الدلتا من آثار التغيرات المناخية عبر تطبيق أنظمة الري الدقيق واستخدام مجسات رطوبة التربة لتحديد الاحتياج المائي الفعلي للنبات."
+            }
+        ];
+
+        // Render Projects Function
+        function renderProjects(filter = 'all') {
+            const grid = document.getElementById('projectsGrid');
+            grid.innerHTML = '';
+
+            const filtered = filter === 'all' 
+                ? projectsData 
+                : projectsData.filter(p => p.category === filter);
+
+            filtered.forEach(project => {
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition border border-slate-200 flex flex-col";
+                card.innerHTML = `
+                    <div class="h-36 ${project.color} relative overflow-hidden flex items-center justify-center text-white p-4">
+                        <span class="absolute top-3 right-3 bg-black/25 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-lg">
+                            مشروع #${project.id}
+                        </span>
+                        <i class="fa-solid ${project.icon} text-6xl opacity-25 absolute left-4 bottom-2"></i>
+                        <h4 class="text-lg font-bold relative z-10 text-center leading-snug">${project.title}</h4>
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col justify-between">
+                        <p class="text-sm text-slate-600 leading-relaxed mb-5">
+                            ${project.shortDesc}
+                        </p>
+                        <button onclick="openProjectModal(${project.id})" class="w-full bg-slate-100 hover:bg-primary hover:text-white text-slate-700 font-semibold py-2.5 rounded-xl transition text-sm flex items-center justify-center gap-2">
+                            <span>تفاصيل المشروع</span> <i class="fa-solid fa-arrow-left"></i>
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Filter Projects Handler
+        function filterProjects(category) {
+            // Update active button styling
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('bg-primary', 'text-white');
+                btn.classList.add('bg-white', 'text-slate-600');
+            });
+            event.target.classList.remove('bg-white', 'text-slate-600');
+            event.target.classList.add('bg-primary', 'text-white');
+
+            renderProjects(category);
+        }
+
+        // Open Project Details Modal
+        function openProjectModal(id) {
+            const project = projectsData.find(p => p.id === id);
+            if (project) {
+                document.getElementById('modalBadge').innerText = `مشروع رقم ${project.id} من 14`;
+                document.getElementById('modalBadge').classList.remove('hidden');
+                openModal(project.title, project.fullDetails);
+            }
+        }
+
+        // Multi-page Navigation Controller
+        function showPage(pageId) {
+            // Hide all pages
+            document.querySelectorAll('.page-section').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Show target page
+            const targetPage = document.getElementById('page-' + pageId);
+            if (targetPage) {
+                targetPage.classList.add('active');
+            }
+
+            // Update desktop navbar active state
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('text-primary', 'font-bold', 'border-primary');
+                link.classList.add('text-slate-600', 'border-transparent');
+            });
+
+            const activeNav = document.getElementById('nav-' + pageId);
+            if (activeNav) {
+                activeNav.classList.remove('text-slate-600', 'border-transparent');
+                activeNav.classList.add('text-primary', 'font-bold', 'border-primary');
+            }
+
+            // Close mobile menu if open
+            document.getElementById('mobileMenu').classList.add('hidden');
+
+            // Scroll to top smoothly
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
         // Mobile Menu Toggle
         const menuBtn = document.getElementById('menuBtn');
         const mobileMenu = document.getElementById('mobileMenu');
@@ -439,11 +933,13 @@
 
         function closeModal() {
             document.getElementById('customModal').classList.add('hidden');
+            document.getElementById('modalBadge').classList.add('hidden');
         }
 
         // Form Submit Handler
         function handleFormSubmit(e) {
             e.preventDefault();
+            document.getElementById('modalBadge').classList.add('hidden');
             openModal('تم الإرسال بنجاح', 'شكراً لك، تم استلام طلبك/شكواك بنجاح وسيتم المتابعة من قبل مهندسي قطاع تطوير الري المختصين في أقرب وقت.');
             e.target.reset();
         }
@@ -453,8 +949,7 @@
             const feddans = parseFloat(document.getElementById('feddanInput').value) || 1;
             const cropMultiplier = parseFloat(document.getElementById('cropType').value);
 
-            // Approximate calculations per feddan annually
-            const waterPerFeddan = 2500; // cubic meters saved roughly
+            const waterPerFeddan = 2500;
             const totalWater = Math.round(feddans * waterPerFeddan * cropMultiplier);
             const cropInc = Math.round(20 * cropMultiplier);
             const money = Math.round(feddans * 3500 * cropMultiplier);
@@ -465,11 +960,143 @@
 
             const resultBox = document.getElementById('calcResult');
             resultBox.classList.remove('hidden');
-            resultBox.classList.add('animate-bounce');
-            setTimeout(() => {
-                resultBox.classList.remove('animate-bounce');
-            }, 1000);
         }
+
+        // Render D3.js Interactive Charts
+        function renderCharts() {
+            // 1. Bar Chart: Canal Rehabilitation Progress (km)
+            const barContainer = document.getElementById('barChartContainer');
+            if (barContainer && typeof d3 !== 'undefined') {
+                barContainer.innerHTML = '';
+                const barData = [
+                    { year: '2020', km: 1450 },
+                    { year: '2021', km: 3200 },
+                    { year: '2022', km: 5100 },
+                    { year: '2023', km: 6400 },
+                    { year: '2024', km: 7350 }
+                ];
+
+                const margin = { top: 20, right: 20, bottom: 30, left: 45 };
+                const width = (barContainer.clientWidth || 400) - margin.left - margin.right;
+                const height = 220 - margin.top - margin.bottom;
+
+                const svg = d3.select('#barChartContainer')
+                    .append('svg')
+                    .attr('width', width + margin.left + margin.right)
+                    .attr('height', height + margin.top + margin.bottom)
+                    .append('g')
+                    .attr('transform', `translate(${margin.left},${margin.top})`);
+
+                const x = d3.scaleBand()
+                    .range([0, width])
+                    .domain(barData.map(d => d.year))
+                    .padding(0.35);
+
+                const y = d3.scaleLinear()
+                    .domain([0, 8000])
+                    .range([height, 0]);
+
+                svg.append('g')
+                    .attr('transform', `translate(0,${height})`)
+                    .call(d3.axisBottom(x))
+                    .selectAll('text')
+                    .style('font-family', 'Cairo, sans-serif')
+                    .style('font-weight', 'bold')
+                    .style('fill', '#475569');
+
+                svg.append('g')
+                    .call(d3.axisLeft(y).ticks(4))
+                    .selectAll('text')
+                    .style('font-family', 'Cairo, sans-serif')
+                    .style('fill', '#64748b');
+
+                svg.selectAll('rect')
+                    .data(barData)
+                    .enter()
+                    .append('rect')
+                    .attr('x', d => x(d.year))
+                    .attr('y', d => y(d.km))
+                    .attr('width', x.bandwidth())
+                    .attr('height', d => height - y(d.km))
+                    .attr('rx', 6)
+                    .attr('fill', (d, i) => i === barData.length - 1 ? '#d97706' : '#0f766e');
+
+                svg.selectAll('.bar-label')
+                    .data(barData)
+                    .enter()
+                    .append('text')
+                    .attr('x', d => x(d.year) + x.bandwidth() / 2)
+                    .attr('y', d => y(d.km) - 6)
+                    .attr('text-anchor', 'middle')
+                    .style('font-family', 'Cairo, sans-serif')
+                    .style('font-size', '11px')
+                    .style('font-weight', 'bold')
+                    .style('fill', '#1e293b')
+                    .text(d => d.km);
+            }
+
+            // 2. Donut Chart: Distribution of 14 Projects
+            const donutContainer = document.getElementById('donutChartContainer');
+            if (donutContainer && typeof d3 !== 'undefined') {
+                donutContainer.innerHTML = '';
+                const donutData = [
+                    { label: 'قومية', value: 4, color: '#0f766e' },
+                    { label: 'ري حديث', value: 5, color: '#d97706' },
+                    { label: 'متكامل', value: 5, color: '#0d9488' }
+                ];
+
+                const size = 210;
+                const radius = size / 2 - 10;
+
+                const svg = d3.select('#donutChartContainer')
+                    .append('svg')
+                    .attr('width', size)
+                    .attr('height', size)
+                    .append('g')
+                    .attr('transform', `translate(${size / 2},${size / 2})`);
+
+                const pie = d3.pie().value(d => d.value).sort(null);
+                const arc = d3.arc().innerRadius(radius * 0.58).outerRadius(radius);
+
+                svg.selectAll('path')
+                    .data(pie(donutData))
+                    .enter()
+                    .append('path')
+                    .attr('d', arc)
+                    .attr('fill', d => d.data.color)
+                    .attr('stroke', '#ffffff')
+                    .style('stroke-width', '3px');
+
+                svg.append('text')
+                    .attr('text-anchor', 'middle')
+                    .attr('dy', '-0.1em')
+                    .style('font-family', 'Cairo, sans-serif')
+                    .style('font-size', '22px')
+                    .style('font-weight', '900')
+                    .style('fill', '#0f766e')
+                    .text('14');
+
+                svg.append('text')
+                    .attr('text-anchor', 'middle')
+                    .attr('dy', '1.3em')
+                    .style('font-family', 'Cairo, sans-serif')
+                    .style('font-size', '11px')
+                    .style('font-weight', 'bold')
+                    .style('fill', '#64748b')
+                    .text('مشروعاً');
+            }
+        }
+
+        // Initialize Projects & Charts on Load
+        window.addEventListener('DOMContentLoaded', () => {
+            renderProjects('all');
+            renderCharts();
+        });
+
+        // Re-render charts on window resize for responsiveness
+        window.addEventListener('resize', () => {
+            renderCharts();
+        });
     </script>
 </body>
 </html>
